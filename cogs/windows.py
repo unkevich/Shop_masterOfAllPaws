@@ -13,7 +13,10 @@ class my_window:
         self.window.title('Мастер на все лапки')
         self.window.iconbitmap(default='assets/icons/logo.ico')
 
+        self.old_name = ''
+
         self.create_frames()
+        self.secret()
 
         self.window.mainloop()
 
@@ -119,9 +122,9 @@ class my_window:
         # кнопки
         self.btn_new_tovar = Button(self.frame1, text='Добавить новый товар', command=self.create_tovar)
         self.btn_new_tovar.place(x=600, y=60)
-        self.btn_del_tovar = Button(self.frame1, text='Удалить товар')
+        self.btn_del_tovar = Button(self.frame1, text='Удалить товар', command=self.del_tovar)
         self.btn_del_tovar.place(x=600, y=100)
-        self.btn_update_tovar = Button(self.frame1, text='Изменить товар')
+        self.btn_update_tovar = Button(self.frame1, text='Изменить товар', command=self.update_tovar)
         self.btn_update_tovar.place(x=600, y=140)
 
         self.update_tables(self.table_tov)
@@ -143,6 +146,43 @@ class my_window:
                 self.new_connect.execute_sql(f"insert into tovar (name, price) values ('{self.tovar_name.get()}', '{self.tovar_price.get()}')")
             self.new_connect.close_db()
             self.update_tables(self.table_tov)
+
+    # удаление товара
+    def del_tovar(self):
+        self.new_connect = connect_db(name_db)
+        if self.tovar_name.get() != '':
+            self.check = self.new_connect.execute_sql(f"select * from tovar where name='{self.tovar_name.get()}'")
+            if len(self.check.fetchall()) == 0:
+                messagebox.showerror('Ошибка', 'Такого товара не существует!')
+            else:
+                otvet = messagebox.askyesno('Уведомление', 'Вы точно желаете удалить данный товар?')
+                if otvet:
+                    self.sql = self.new_connect.execute_sql(f"delete from tovar where name='{self.tovar_name.get()}'")
+                    self.new_connect.close_db()
+                    self.update_tables(self.table_tov)
+        else:
+            messagebox.showerror('Ошибка', 'Товар не выбран!')
+    
+    # обновление товара
+    def update_tovar(self):
+        self.new_connect = connect_db(name_db)
+        if self.tovar_name.get() != '':
+            self.check = self.new_connect.execute_sql(f"select * from tovar where name='{self.old_name}'")
+            if len(self.check.fetchall()) == 0:
+                messagebox.showerror('Ошибка', 'Такого товара не существует!')
+            else:
+                self.replay = self.new_connect.execute_sql(f"select * from tovar where name='{self.tovar_name.get()}' and price='{self.tovar_price.get()}'")
+                if len(self.replay.fetchall()) > 0:
+                    messagebox.showerror('Ошибка', 'Такой товар уже существует!')
+                else:
+                    otvet = messagebox.askyesno('Увемдоление', 'Вы точно хотите удалить данный товар?')
+                    if otvet:
+                        self.new_connect.execute_sql(f"update tovar set name='{self.tovar_name.get()}' and price='{self.tovar_price.get()}' where name='{self.old_name}'")
+                        self.new_connect.close_db()
+                        self.update_tables(self.table_tov)
+        else:
+            messagebox.showerror('Ошибка', 'Товар не выбран!')
+
 
     # вкладка 'Купить'
     def frame_buy(self):
