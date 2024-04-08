@@ -39,6 +39,44 @@ class my_window:
         self.frame_buy()
         self.frame_sell()
 
+    def secret(self):
+        self.canva = Canvas(self.frame1, width=900, height=200, bg='lightblue', highlightthickness=0)
+        self.canva.place(x=0, y=250)
+
+        self.img_m = PhotoImage(file='assets/images/magazin.png')
+        self.img_del = PhotoImage(file='assets/images/delivery.png')
+        self.img_tov = PhotoImage(file='assets/images/tovar.png')
+
+        self.image_magazin = self.canva.create_image(800,60,image=self.img_m)
+        self.image_delivery = self.canva.create_image(60,60,image=self.img_del,state='hidden')
+        self.image_tovar = self.canva.create_image(750,100,image=self.img_tov,state='hidden')
+
+        self.canva.tag_bind(self.image_magazin, '<Button-1>', lambda event: self.secret_move())
+    
+    def secret_move(self):
+        self.canva.itemconfig(self.image_delivery, state='normal')
+        self.canva.itemconfig(self.image_tovar, state='hidden')
+        self.x, self.y = self.canva.coords(self.image_delivery)
+        if self.x < 800:
+            self.canva.move(self.image_delivery, 10, 0)
+            self.canva.after(20, self.secret_move)
+        else:
+            self.canva.itemconfig(self.image_delivery, state='hidden')
+            self.canva.coords(self.image_delivery, 60, 60)
+            self.canva.itemconfig(self.image_tovar, state='normal')
+    
+    # обновление таблиц
+    def update_tables(self, table):
+        for row in table.get_children():
+            table.delete(row)
+        self.new_connect = connect_db(name_db)
+        if table == self.table_tov:
+            self.sql = self.new_connect.execute_sql(f'select * from tovar')
+            for row in self.sql:
+                self.db_name = row[1]
+                self.db_price = row[2]
+                self.table_tov.insert('', END, values=[self.db_name, self.db_price])
+
     # вклад 'Товары'
     def frame_tovar(self):
         # таблица товаров
@@ -69,6 +107,14 @@ class my_window:
         self.btn_del_tovar.place(x=600, y=100)
         self.btn_update_tovar = Button(self.frame1, text='Изменить товар')
         self.btn_update_tovar.place(x=600, y=140)
+
+        self.update_tables(self.table_tov)
+        self.table_tov.bind('<<TreeviewSelect>>', lambda event: self.select_tovar(self.tovar_name, self.tovar_price))
+
+    def select_tovar(self, tovar_name, tovar_price):
+        for row in self.table_tov.selection():
+            tovar_name.set(self.table_tov.item(row)['values'][0])
+            tovar_price.set(self.table_tov.item(row)['values'][1])
 
     # вкладка 'Купить'
     def frame_buy(self):
