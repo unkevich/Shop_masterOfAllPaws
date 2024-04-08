@@ -65,6 +65,22 @@ class my_window:
             self.canva.coords(self.image_delivery, 60, 60)
             self.canva.itemconfig(self.image_tovar, state='normal')
     
+    # сортировка по названию
+    def sort_name(self, col, reverse, table):
+        data = [(table.set(child, col), child) for child in table.get_children('')]
+        data.sort(reverse=reverse)
+        for index, (val, child) in enumerate(data):
+            table.move(child, '', index)
+        table.heading(col, command=lambda: self.sort_number(col, not reverse, table))
+    
+    # сортировка по номеру
+    def sort_number(self, col, reverse, table):
+        data = [(float(table.set(child, col)), child) for child in table.get_children('')]
+        data.sort(reverse=reverse)
+        for index, (val, child) in enumerate(data):
+            table.move(child, '', index)
+        table.heading(col, command=lambda: self.sort_number(col, not reverse, table))
+
     # обновление таблиц
     def update_tables(self, table):
         for row in table.get_children():
@@ -101,7 +117,7 @@ class my_window:
         self.entry_price = Entry(self.frame1, textvariable=self.tovar_price, font='Arial 12')
         self.entry_price.place(x=350, y=140)
         # кнопки
-        self.btn_new_tovar = Button(self.frame1, text='Добавить новый товар')
+        self.btn_new_tovar = Button(self.frame1, text='Добавить новый товар', command=self.create_tovar)
         self.btn_new_tovar.place(x=600, y=60)
         self.btn_del_tovar = Button(self.frame1, text='Удалить товар')
         self.btn_del_tovar.place(x=600, y=100)
@@ -115,6 +131,18 @@ class my_window:
         for row in self.table_tov.selection():
             tovar_name.set(self.table_tov.item(row)['values'][0])
             tovar_price.set(self.table_tov.item(row)['values'][1])
+
+    # добавление товара
+    def create_tovar(self):
+        if self.tovar_name.get() != '' or self.tovar_price.get() != '':
+            self.new_connect = connect_db(name_db)
+            self.replay = self.new_connect.execute_sql(f"select * from tovar where name='{self.tovar_name.get()}'")
+            if len(self.replay.fetchall()) > 0:
+                messagebox.showerror('Ошибка', 'Такой товар уже существует!')
+            else:
+                self.new_connect.execute_sql(f"insert into tovar (name, price) values ('{self.tovar_name.get()}', '{self.tovar_price.get()}')")
+            self.new_connect.close_db()
+            self.update_tables(self.table_tov)
 
     # вкладка 'Купить'
     def frame_buy(self):
