@@ -90,10 +90,18 @@ class my_window:
             table.delete(row)
         self.new_connect = connect_db(name_db)
         if table == self.table_tov:
-            self.sql = self.new_connect.execute_sql(f'select * from tovar')
+            self.sql = self.new_connect.execute_sql(f"select * from tovar")
             for row in self.sql:
                 self.db_name = row[1]
                 self.db_price = row[2]
+                self.table_tov.insert('', END, values=[self.db_name, self.db_price])
+        elif table == self.table_tov:
+            self.sql = self.new_connect.execute_sql(f'select T.name, T.price, TB.kol, TB.sum from tovar_buy TB inner join tovar T on TB.id_tovar = T.id')
+            for row in self.sql:
+                self.db_name = row[0]
+                self.db_price = row[1]
+                self.db_kol = row[2]
+                self.db_sum = row[3]
                 self.table_tov.insert('', END, values=[self.db_name, self.db_price])
 
     # вклад 'Товары'
@@ -186,7 +194,51 @@ class my_window:
 
     # вкладка 'Купить'
     def frame_buy(self):
-        pass
+        self.table_buy = Treeview(self.frame2, columns=['tovar', 'price', 'kol', 'sum'], show='headings')
+        self.table_buy.heading('tovar', text = 'Товар', command=lambda:self.sort_name('tovar', False, self.table_buy))
+        self.table_buy.heading('price', text = 'Цена', command=lambda:self.sort_number('price', False, self.table_buy))
+        self.table_buy.heading('kol', text = 'Количество', command=lambda:self.sort_number('kol', False, self.table_buy))
+        self.table_buy.heading('sum', text = 'Сумма', command=lambda:self.sort_number('sum', False, self.table_buy))
+        
+        self.table_buy.column('tovar', width=150, anchor='c')
+        self.table_buy.column('price', width=150, anchor='c')
+        self.table_buy.column('kol', width=150, anchor='c')
+        self.table_buy.column('sum', width=150, anchor='c')
+        self.table_buy.place(x = 10, y = 10)
+
+        self.update_tables(self.table_buy)
+
+        self.tovar_list = []
+        self.new_connect = connect_db(name_db)
+        self.sql = self.new_connect.execute_sql(f'select * from tovar')
+        for row in self.sql:
+            self.tovar_list.append(row[1])
+        self.new_connect.close_db()
+
+        self.lb_name = Label(self.frame2, text='Выберите товар:', font='Arial 12', background='lightblue')
+        self.lb_name.place(x=10, y=250)
+        self.buy_tovar = Combobox(self.frame2, values=self.tovar_list, state='readonly')
+        self.buy_tovar.place(x=10, y=300)
+
+        self.tovar_kol = IntVar()
+        self.lb_kol = Label(self.frame2, text='Введите количество:', font='Arial 12', background='lightblue')
+        self.lb_kol.place(x=200, y=250)
+        self.buy_kol = Entry(self.frame2, textvariable=self.tovar_kol)
+        self.buy_tovar.place(x=200, y=300, width=100)
+
+        self.lb_price = Label(self.frame2, text='Цена 0 руб.', font='Arial 12', background='lightblue')
+        self.lb_price.place(x=10, y=340)
+
+        self.lb_sum = Label(self.frame2, text='Итого 0 руб.', font='Arial 12', background='lightblue')
+        self.lb_sum.place(x=200, y=340)
+
+        self.btn_send_buy = Button(self.frame2, text='Купить')
+        self.btn_send_buy.place(x=400, y=300)
+
+        self.btn_up = Button(self.frame2, text='+',)
+        self.btn_up.place(x=300, y=300, width=25, height=23)
+        self.btn_down = Button(self.frame2, text='-',)
+        self.btn_down.place(x=325, y=300, width=25, height=23)
 
     # вкладка 'Продать'
     def frame_sell(self):
