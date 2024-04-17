@@ -15,6 +15,9 @@ class my_window:
 
         self.old_name = ''
 
+        self.price = 0
+        self.sum = 0
+
         self.create_frames()
         self.secret()
 
@@ -219,6 +222,7 @@ class my_window:
         self.lb_name.place(x=10, y=250)
         self.buy_tovar = Combobox(self.frame2, values=self.tovar_list, state='readonly')
         self.buy_tovar.place(x=10, y=300)
+        self.buy_tovar.bind('<<ComboboxSelected>>', lambda event: self.combobox_tovar())
 
         self.tovar_kol = IntVar()
         self.lb_kol = Label(self.frame2, text='Введите количество:', font='Arial 12', background='lightblue')
@@ -232,7 +236,7 @@ class my_window:
         self.lb_sum = Label(self.frame2, text='Итого 0 руб.', font='Arial 12', background='lightblue')
         self.lb_sum.place(x=200, y=340)
 
-        self.btn_send_buy = Button(self.frame2, text='Купить')
+        self.btn_send_buy = Button(self.frame2, text='Купить', command=self.buy)
         self.btn_send_buy.place(x=400, y=300)
 
         self.btn_up = Button(self.frame2, text='+',)
@@ -243,3 +247,42 @@ class my_window:
     # вкладка 'Продать'
     def frame_sell(self):
         pass
+    
+    def kol_up(self):
+        self.tovar_kol.set(self.tovar_kol.get()+1)
+        self.set_sum()
+
+    def kol_down(self):
+        if self.tovar_kol.get() > 0:
+            self.tovar_kol.set(self.tovar_kol.get()-1)
+            self.set_sum()
+
+    def buy(self):
+        if self.buy_tovar.get() != '' and self.sum > 0:
+            print(self.price)
+            self.new_connect = connect_db(name_db)
+            self.sql = self.new_connect.execute_sql(f"se;ect * from tovar where name = '{self.buy_tovar.get()}'")
+            for row in self.sql:
+                self.id_tovar = row[0]
+                self.new_connect.execute_sql(f"insert into tovar_buy (id_tovar, price, kol, sum) values ('{self.id_tovar}', '{self.price}', '{self.tovar_kol.get()}', '{self.sum}')")
+            self.new_connect.close_db()
+            self.update_tables(self.table_buy)
+        else:
+            messagebox.showerror('Ошибка', 'Вы не выбрали товар или не ввели количество')
+
+    def set_sum(self):
+        if self.tovar_kol.get() < 0:
+            messagebox.showerror('Ошибка', 'Количествло не может быть отрицательным!')
+            self.tovar_kol.set(0)
+        self.sum = self.tovar_kol.get()*self.price
+        self.lb_sum.configure(text=f'Сумма: {self.sum} руб.')
+
+    def combobox_tovar(self):
+        self.new_connect = connect_db(name_db)
+        self.sql = self.new_connect.execute_sql(f"select * from tovar where name='{self.buy_tovar.get()}'")
+
+        for row in self.sql:
+            self.price = row[2]
+        self.new_connect.close_db()
+        self.lb_price.configure(text=f'Цена: {self.price} руб.')
+        self.set_sum()
